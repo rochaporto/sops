@@ -1,0 +1,37 @@
+stages:
+  - build
+  - deploy
+
+variables:
+  GOPATH: "${CI_BUILDS_DIR}/go"
+
+before_script:
+  - set -e
+  - PATH=${GOPATH}/bin:${PATH}
+
+build:
+  stage: build
+  image: golang:1.13-alpine
+  artifacts:
+    paths:
+      - sops
+    expire_in: 30 minutes
+  script:
+    - apk update && apk upgrade && apk add --no-cache bash curl gcc git libc-dev make
+    - make install
+    - cp ${GOPATH}/bin/sops .
+
+deploy:
+  stage: deploy
+  image: golang:1.13-alpine
+  only:
+    - /^v.*/
+  except:
+    - branches
+  artifacts:
+    paths:
+      - ${GOPATH}/bin/sops
+    expire_in: 30 years
+  script:
+    - apk update && apk upgrade && apk add --no-cache bash curl gcc git libc-dev make
+    - make install
